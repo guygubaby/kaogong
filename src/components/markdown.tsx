@@ -5,7 +5,7 @@ import { learningContent } from '@/lib/learning-content'
 
 export function Markdown({ children }: { children: string }) {
   return (
-    <div className="markdown">
+    <div className="markdown [&_blockquote]:text-pretty [&_p]:text-pretty">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}

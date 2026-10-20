@@ -36,7 +36,7 @@ export async function searchKnowledge(
       .map((term) => `"${term.replaceAll('"', '""')}"`)
       .join(' OR ')
     const result = await env.DB.prepare(
-      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 1800) AS body FROM knowledge_fts f JOIN KnowledgeDocument d ON d.rowid=f.rowid WHERE knowledge_fts MATCH ?${moduleClause} ORDER BY bm25(knowledge_fts) LIMIT ?`,
+      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 500) AS body FROM knowledge_fts f JOIN KnowledgeDocument d ON d.rowid=f.rowid WHERE knowledge_fts MATCH ?${moduleClause} ORDER BY bm25(knowledge_fts) LIMIT ?`,
     )
       .bind(match, ...(module ? [module] : []), limit)
       .all<DocumentRow>()
@@ -45,7 +45,7 @@ export async function searchKnowledge(
   if (!rows.length) {
     const pattern = `%${terms[0].replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
     const result = await env.DB.prepare(
-      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 1800) AS body FROM KnowledgeDocument d WHERE (d.title LIKE ? ESCAPE '\\' OR d.body LIKE ? ESCAPE '\\')${moduleClause} ORDER BY CASE WHEN d.kind='lecture' THEN 0 ELSE 1 END, d.title LIMIT ?`,
+      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 500) AS body FROM KnowledgeDocument d WHERE (d.title LIKE ? ESCAPE '\\' OR d.body LIKE ? ESCAPE '\\')${moduleClause} ORDER BY CASE WHEN d.kind='lecture' THEN 0 ELSE 1 END, d.title LIMIT ?`,
     )
       .bind(pattern, pattern, ...(module ? [module] : []), limit)
       .all<DocumentRow>()

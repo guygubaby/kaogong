@@ -8,10 +8,10 @@ import {
   ArrowUp,
   ArrowUpRight,
   BookOpen,
-  Check,
   Loader2,
   Plus,
   Square,
+  Sparkles,
 } from 'lucide-react'
 import { z } from 'zod'
 import { errorText, http } from '@/lib/client'
@@ -45,11 +45,11 @@ const transport = new DefaultChatTransport<StudyMessage>({
   }),
 })
 const toolLabels: Record<string, string> = {
-  'tool-loadSkill': '已加载学习检索指南',
-  'tool-searchKnowledge': '检索相关讲义与考点',
-  'tool-readDocument': '读取知识库原文',
-  'tool-knownIssues': '核对真题疑点',
-  'tool-readOriginal': '核对备用原文',
+  'tool-loadSkill': '正在准备学习思路…',
+  'tool-searchKnowledge': '正在查找相关考点…',
+  'tool-readDocument': '正在阅读知识点…',
+  'tool-knownIssues': '正在核对题目细节…',
+  'tool-readOriginal': '正在核对公式与细节…',
 }
 const questions = [
   '学习申论需要掌握哪些要素？',
@@ -321,42 +321,72 @@ function ChatPane({
           const el = scroll.current!
           stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 140
         }}
-        className="min-h-0 flex-1 overflow-y-auto px-5 py-9 md:px-12"
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 md:px-10"
       >
-        <div className="mx-auto max-w-3xl space-y-10">
+        <div className="mx-auto max-w-4xl space-y-7 sm:space-y-9">
           {!messages.length && (
             <p className="pt-12 text-center text-sm text-muted-foreground">
               把你的问题写下来，我们一起找到答案。
             </p>
           )}
-          {messages.map((message) => (
-            <article
-              key={message.id}
-              className={
-                message.role === 'user'
-                  ? 'ml-auto max-w-xl rounded-2xl bg-primary/7 px-5 py-4'
-                  : 'max-w-full'
-              }
-            >
-              <p className="mb-3 text-[11px] text-muted-foreground">
-                {message.role === 'user' ? '你' : '考公学习导师'}
-              </p>
-              {message.parts.map((part, i) =>
-                part.type === 'text' ? (
-                  <Markdown key={i}>{part.text}</Markdown>
-                ) : part.type.startsWith('tool-') ? (
-                  <div
-                    key={i}
-                    className="my-2 flex items-center gap-2 text-[11px] text-muted-foreground"
+          {messages.map((message) => {
+            const isUser = message.role === 'user'
+            const text = message.parts
+              .filter((part) => part.type === 'text')
+              .map((part) => part.text)
+              .join('\n\n')
+            const lastTool = message.parts.findLast((part) =>
+              part.type.startsWith('tool-'),
+            )
+            const isWriting = busy && message.id === messages.at(-1)?.id
+            if (!isUser && !text && !isWriting) return null
+            return (
+              <article
+                key={message.id}
+                className={
+                  isUser
+                    ? 'ml-auto w-fit max-w-5/6'
+                    : 'flex max-w-full items-start gap-2.5 sm:gap-4'
+                }
+              >
+                <span className="sr-only">
+                  {isUser ? '你' : '考公学习导师'}
+                </span>
+                {!isUser && (
+                  <span
+                    aria-hidden="true"
+                    className="mt-1 grid size-8 shrink-0 place-items-center rounded-xl bg-brand/65 text-brand-foreground sm:size-9"
                   >
-                    <Check size={12} />
-                    {toolLabels[part.type] ?? '查阅知识库'}
-                  </div>
-                ) : null,
-              )}
-            </article>
-          ))}
-          {busy && (
+                    <Sparkles size={18} strokeWidth={1.8} />
+                  </span>
+                )}
+                <div
+                  className={
+                    isUser
+                      ? 'rounded-3xl rounded-tr-lg bg-message px-5 py-3.5 text-foreground sm:px-6'
+                      : 'max-w-[80ch] min-w-0 flex-1 rounded-3xl rounded-tl-lg bg-assistant px-5 py-5 sm:px-7 sm:py-6'
+                  }
+                >
+                  {text && <Markdown>{text}</Markdown>}
+                  {!isUser && isWriting && (
+                    <p
+                      role="status"
+                      className={`${text ? 'mt-4' : ''} flex items-center gap-2 text-xs text-muted-foreground`}
+                    >
+                      <Loader2
+                        size={13}
+                        className="animate-spin motion-reduce:animate-none"
+                      />
+                      {lastTool && !text
+                        ? (toolLabels[lastTool.type] ?? '正在整理学习要点…')
+                        : '正在整理回答…'}
+                    </p>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+          {busy && messages.at(-1)?.role !== 'assistant' && (
             <p
               role="status"
               className="flex items-center gap-2 text-xs text-muted-foreground"
@@ -380,7 +410,7 @@ function ChatPane({
         </div>
       </div>
       <div className="shrink-0 px-4 pt-2 pb-5 md:px-10">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-4xl">
           <form
             onSubmit={(event) => {
               event.preventDefault()

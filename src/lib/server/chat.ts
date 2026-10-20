@@ -72,6 +72,8 @@ export async function chat(
   let outputTokens = 0
   let chargedTokens = 0
   let completed = false
+  let foundDocuments = false
+  let readDocuments = false
   let partialText = ''
   let resolveCompletion: () => void = () => {}
   const completion = new Promise<void>((resolve) => {
@@ -178,7 +180,9 @@ export async function chat(
       }),
       execute: async ({ query, module }) => {
         await requireUser(request)
-        return searchKnowledge(query, module)
+        const documents = await searchKnowledge(query, module, 6)
+        foundDocuments ||= documents.length > 0
+        return documents
       },
     }),
     readDocument: tool({
@@ -189,7 +193,9 @@ export async function chat(
       }),
       execute: async ({ id, offset }) => {
         await requireUser(request)
-        return readDocument(id, offset)
+        const document = await readDocument(id, offset)
+        readDocuments = true
+        return document
       },
     }),
     knownIssues: tool({
@@ -242,7 +248,9 @@ export async function chat(
           user.requestsPerMinute,
         )
         const maxOutputTokens = Math.min(
-          stepNumber === 0 ? 4096 : provider.maxOutputTokens,
+          readDocuments
+            ? provider.maxOutputTokens
+            : Math.min(4096, provider.maxOutputTokens),
           state.remaining - inputUpperBound,
         )
         if (maxOutputTokens < 256)
@@ -269,9 +277,22 @@ export async function chat(
                   toolName: 'loadSkill' as const,
                 },
               }
-            : stepNumber === MAX_AGENT_STEPS - 1
-              ? { toolChoice: 'none' as const }
-              : {}),
+            : foundDocuments && !readDocuments
+              ? {
+                  toolChoice: {
+                    type: 'tool' as const,
+                    toolName: 'readDocument' as const,
+                  },
+                }
+              : stepNumber === MAX_AGENT_STEPS - 1
+                ? {
+                    toolChoice: 'none' as const,
+                    activeTools: [],
+                    instructions:
+                      instructions +
+                      '\n检索阶段已经结束。现在直接回答用户的问题，用中文组织清楚的讲解和例子。不得继续检索，不得输出任何工具调用、内部指令或代码标记。',
+                  }
+                : {}),
         }
       },
       onChunk: ({ chunk }) => {
