@@ -15,6 +15,8 @@ import { chat } from './chat'
 import { readDocument, searchKnowledge } from './knowledge'
 import { providerInput } from '../shared'
 import { learningContent } from '../learning-content'
+import { studyDocumentsSql } from '../knowledge-scope'
+import { deleteConversation } from './conversations'
 
 const uuid = z.string().uuid()
 const providerProbe = providerInput.extend({
@@ -210,6 +212,10 @@ async function route(request: Request): Promise<Response> {
     )
   }
   const conversationMatch = path.match(/^\/conversations\/([^/]+)$/)
+  if (conversationMatch && request.method === 'DELETE') {
+    await deleteConversation(env.DB, uuid.parse(conversationMatch[1]), user.id)
+    return new Response(null, { status: 204 })
+  }
   if (conversationMatch && request.method === 'GET') {
     const id = uuid.parse(conversationMatch[1])
     const conversation = await db.conversation.findFirst({
@@ -247,7 +253,7 @@ async function route(request: Request): Promise<Response> {
   }
   if (path === '/knowledge/modules') {
     const results = await env.DB.prepare(
-      "SELECT module, COUNT(*) AS count FROM KnowledgeDocument WHERE kind IN ('lecture','topic','question','material') GROUP BY module ORDER BY count DESC",
+      `SELECT module, COUNT(*) AS count FROM KnowledgeDocument WHERE kind IN ('lecture','topic','question','material') AND ${studyDocumentsSql} GROUP BY module ORDER BY count DESC`,
     ).all()
     return Response.json(results.results)
   }
@@ -266,7 +272,7 @@ async function route(request: Request): Promise<Response> {
       })
     const where = params.module ? ' AND module = ?' : ''
     const results = await env.DB.prepare(
-      `SELECT id, title, module, kind, issue FROM KnowledgeDocument WHERE kind IN ('lecture','topic','question','material')${where} ORDER BY CASE WHEN kind='lecture' THEN 0 WHEN kind='topic' THEN 1 ELSE 2 END, title LIMIT 30 OFFSET ?`,
+      `SELECT id, title, module, kind, issue FROM KnowledgeDocument WHERE kind IN ('lecture','topic','question','material') AND ${studyDocumentsSql}${where} ORDER BY CASE WHEN kind='lecture' THEN 0 WHEN kind='topic' THEN 1 ELSE 2 END, title LIMIT 30 OFFSET ?`,
     )
       .bind(...(params.module ? [params.module] : []), (params.page - 1) * 30)
       .all()

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { KnowledgeItem } from '../shared'
 import { learningContent } from '../learning-content'
+import { studyDocumentsSql } from '../knowledge-scope'
 import { runtime } from './runtime'
 import { HttpError } from './http'
 
@@ -36,7 +37,7 @@ export async function searchKnowledge(
       .map((term) => `"${term.replaceAll('"', '""')}"`)
       .join(' OR ')
     const result = await env.DB.prepare(
-      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 500) AS body FROM knowledge_fts f JOIN KnowledgeDocument d ON d.rowid=f.rowid WHERE knowledge_fts MATCH ?${moduleClause} ORDER BY bm25(knowledge_fts) LIMIT ?`,
+      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 500) AS body FROM knowledge_fts f JOIN KnowledgeDocument d ON d.rowid=f.rowid WHERE knowledge_fts MATCH ? AND d.${studyDocumentsSql}${moduleClause} ORDER BY bm25(knowledge_fts) LIMIT ?`,
     )
       .bind(match, ...(module ? [module] : []), limit)
       .all<DocumentRow>()
@@ -45,7 +46,7 @@ export async function searchKnowledge(
   if (!rows.length) {
     const pattern = `%${terms[0].replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
     const result = await env.DB.prepare(
-      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 500) AS body FROM KnowledgeDocument d WHERE (d.title LIKE ? ESCAPE '\\' OR d.body LIKE ? ESCAPE '\\')${moduleClause} ORDER BY CASE WHEN d.kind='lecture' THEN 0 ELSE 1 END, d.title LIMIT ?`,
+      `SELECT d.id, d.kind, d.module, d.title, d.path, d.issue, substr(d.body, 1, 500) AS body FROM KnowledgeDocument d WHERE (d.title LIKE ? ESCAPE '\\' OR d.body LIKE ? ESCAPE '\\') AND d.${studyDocumentsSql}${moduleClause} ORDER BY CASE WHEN d.kind='lecture' THEN 0 ELSE 1 END, d.title LIMIT ?`,
     )
       .bind(pattern, pattern, ...(module ? [module] : []), limit)
       .all<DocumentRow>()
@@ -58,7 +59,9 @@ export async function searchKnowledge(
 }
 export async function readDocument(id: string, offset = 0, length = 12_000) {
   const row = await runtime()
-    .env.DB.prepare('SELECT * FROM KnowledgeDocument WHERE id = ?')
+    .env.DB.prepare(
+      `SELECT * FROM KnowledgeDocument WHERE id = ? AND ${studyDocumentsSql}`,
+    )
     .bind(id)
     .first<DocumentRow>()
   if (!row) throw new HttpError(404, 'DOCUMENT_NOT_FOUND', '这份资料尚未收录')
@@ -96,7 +99,9 @@ export async function originalArtifact(
   keyword: string,
 ) {
   const document = await runtime()
-    .env.DB.prepare('SELECT path FROM KnowledgeDocument WHERE id = ?')
+    .env.DB.prepare(
+      `SELECT path FROM KnowledgeDocument WHERE id = ? AND ${studyDocumentsSql}`,
+    )
     .bind(documentId)
     .first<{ path: string }>()
   if (!document?.path.startsWith('lectures/'))

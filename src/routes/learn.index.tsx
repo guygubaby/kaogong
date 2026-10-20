@@ -2,7 +2,14 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, type UIMessage } from 'ai'
-import { useEffect, useRef, useState } from 'react'
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
 import {
   ArrowDown,
   ArrowUp,
@@ -12,6 +19,7 @@ import {
   Plus,
   Square,
   Sparkles,
+  Trash2,
 } from 'lucide-react'
 import { z } from 'zod'
 import { errorText, http } from '@/lib/client'
@@ -62,7 +70,11 @@ function Learning() {
     navigate = useNavigate(),
     client = useQueryClient()
   const [firstPrompt, setFirstPrompt] = useState(''),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    [deleting, setDeleting] = useState<Conversation | null>(null)
+  const cancel = useRef<(() => Promise<void>) | null>(null)
+  const deleteTrigger = useRef<HTMLButtonElement>(null)
+  const newChatButton = useRef<HTMLButtonElement>(null)
   const conversations = useQuery({
     queryKey: ['conversations'],
     queryFn: () => http.get('conversations').json<Conversation[]>(),
@@ -95,6 +107,26 @@ function Learning() {
     },
     onError: (error) => setError(errorText(error)),
   })
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      if (id === chatId) await cancel.current?.()
+      return http.delete(`conversations/${id}`)
+    },
+    onSuccess: async (_response, id) => {
+      if (id === chatId) {
+        setFirstPrompt('')
+        await navigate({ to: '/learn', search: {} })
+      }
+      client.removeQueries({ queryKey: ['conversation', id] })
+      await client.invalidateQueries({ queryKey: ['conversations'] })
+      setDeleting(null)
+    },
+  })
+  function confirmDelete(item: Conversation, trigger: HTMLButtonElement) {
+    remove.reset()
+    deleteTrigger.current = trigger
+    setDeleting(item)
+  }
   return (
     <div className="flex h-svh min-h-0">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-border px-4 py-7 xl:flex">
@@ -111,16 +143,31 @@ function Learning() {
         </p>
         <div className="space-y-1 overflow-y-auto">
           {conversations.data?.map((item) => (
-            <button
+            <div
               key={item.id}
-              onClick={() => {
-                setFirstPrompt('')
-                void navigate({ to: '/learn', search: { chat: item.id } })
-              }}
-              className={`block w-full truncate rounded-xl px-3 py-3 text-left text-xs transition-colors ${chatId === item.id ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/70'}`}
+              className={`group flex items-center rounded-xl ${chatId === item.id ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/70'}`}
             >
-              {item.title}
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFirstPrompt('')
+                  void navigate({ to: '/learn', search: { chat: item.id } })
+                }}
+                className="min-w-0 flex-1 truncate px-3 py-3 text-left text-xs"
+                title={item.title}
+              >
+                {item.title}
+              </button>
+              <button
+                type="button"
+                aria-label={`删除会话：${item.title}`}
+                title="删除会话"
+                onClick={(event) => confirmDelete(item, event.currentTarget)}
+                className="mr-1 grid size-8 shrink-0 place-items-center rounded-lg opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-destructive/8 hover:text-destructive [@media(hover:none)]:opacity-100"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           ))}
           {!conversations.data?.length && (
             <p className="px-3 text-xs leading-6 text-muted-foreground">
@@ -139,15 +186,33 @@ function Learning() {
               公考知识库已接入
             </p>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => create.mutate('')}
-            disabled={create.isPending}
-          >
-            <Plus />
-            新对话
-          </Button>
+          <div className="flex items-center gap-2">
+            {conversation.data && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="删除当前会话"
+                title="删除当前会话"
+                onClick={(event) => {
+                  if (conversation.data)
+                    confirmDelete(conversation.data, event.currentTarget)
+                }}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 />
+              </Button>
+            )}
+            <Button
+              ref={newChatButton}
+              size="sm"
+              variant="outline"
+              onClick={() => create.mutate('')}
+              disabled={create.isPending}
+            >
+              <Plus />
+              新对话
+            </Button>
+          </div>
         </header>
         {Boolean(conversations.data?.length) && (
           <div className="border-b border-border px-5 py-3 xl:hidden">
@@ -181,6 +246,7 @@ function Learning() {
               models={models.data}
               initialPrompt={firstPrompt}
               onInitialSent={() => setFirstPrompt('')}
+              cancel={cancel}
             />
           ) : (
             <div className="grid flex-1 place-items-center text-sm text-muted-foreground">
@@ -232,6 +298,64 @@ function Learning() {
           </div>
         )}
       </section>
+      <Dialog.Root
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open && !remove.isPending) setDeleting(null)
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-60 bg-foreground/20 backdrop-blur-sm" />
+          <Dialog.Content
+            onCloseAutoFocus={(event) => {
+              event.preventDefault()
+              ;(deleteTrigger.current?.isConnected
+                ? deleteTrigger.current
+                : newChatButton.current
+              )?.focus()
+            }}
+            className="fixed top-1/2 left-1/2 z-70 w-[calc(100%_-_2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-border bg-background p-6 shadow-xl outline-none"
+          >
+            <span
+              aria-hidden="true"
+              className="mb-5 grid size-11 place-items-center rounded-2xl bg-destructive/8 text-destructive"
+            >
+              <Trash2 size={20} />
+            </span>
+            <Dialog.Title className="text-lg font-semibold">
+              删除这段会话？
+            </Dialog.Title>
+            <Dialog.Description className="mt-3 text-sm leading-7 break-words text-muted-foreground">
+              将删除“{deleting?.title}
+              ”及全部消息，删除后无法恢复，已使用的额度不会返还。
+            </Dialog.Description>
+            {remove.isError && (
+              <p role="alert" className="mt-4 text-sm text-destructive">
+                {errorText(remove.error)}
+              </p>
+            )}
+            <div className="mt-7 flex justify-end gap-3">
+              <Dialog.Close asChild>
+                <Button variant="outline" disabled={remove.isPending}>
+                  取消
+                </Button>
+              </Dialog.Close>
+              <Button
+                variant="danger"
+                disabled={remove.isPending}
+                onClick={() => {
+                  if (deleting) remove.mutate(deleting.id)
+                }}
+              >
+                {remove.isPending && (
+                  <Loader2 className="animate-spin motion-reduce:animate-none" />
+                )}
+                {remove.isPending ? '正在删除…' : '确认删除'}
+              </Button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }
@@ -241,12 +365,14 @@ function ChatPane({
   models,
   initialPrompt,
   onInitialSent,
+  cancel,
 }: {
   id: string
   conversation: Conversation & { messages: ChatMessage[] }
   models?: Models
   initialPrompt: string
   onInitialSent: () => void
+  cancel: RefObject<(() => Promise<void>) | null>
 }) {
   const client = useQueryClient(),
     [input, setInput] = useState(''),
@@ -288,6 +414,7 @@ function ChatPane({
     },
   })
   const busy = status === 'submitted' || status === 'streaming'
+  useImperativeHandle(cancel, () => stop, [stop])
   function send(text: string) {
     if (!text.trim() || busy || !selected) return
     stick.current = true

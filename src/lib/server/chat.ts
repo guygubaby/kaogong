@@ -21,6 +21,7 @@ import {
 import { MAX_AGENT_STEPS } from '../shared'
 import { learningContent } from '../learning-content'
 import { requireUser } from './auth'
+import { conversationMessage } from './conversations'
 
 const inputSchema = z.object({
   conversationId: z.string().uuid(),
@@ -96,18 +97,22 @@ export async function chat(
         activeLease = undefined
       }
       const createdAt = new Date().toISOString()
-      if (text)
-        await db.message.create({
-          data: {
-            id: crypto.randomUUID(),
-            conversationId: input.conversationId,
-            userId: user.id,
-            role: 'assistant',
-            content: learningContent(text),
-            sources: '[]',
-            createdAt,
-          },
-        })
+      await env.DB.batch([
+        ...(text
+          ? [
+              conversationMessage(env.DB, {
+                conversationId: input.conversationId,
+                userId: user.id,
+                role: 'assistant',
+                content: learningContent(text),
+                createdAt,
+              }),
+            ]
+          : []),
+        env.DB.prepare(
+          'UPDATE Conversation SET updatedAt=?, providerId=?, modelId=? WHERE id=? AND userId=?',
+        ).bind(createdAt, providerId, modelId, input.conversationId, user.id),
+      ])
       await db.usageEvent.create({
         data: {
           id: requestId,
@@ -125,10 +130,6 @@ export async function chat(
           createdAt,
         },
       })
-      await db.conversation.update({
-        where: { id: input.conversationId },
-        data: { updatedAt: createdAt, providerId, modelId },
-      })
     } finally {
       resolveCompletion()
     }
@@ -143,17 +144,15 @@ export async function chat(
     content: item.content.slice(0, 20_000),
   }))
   messages.push({ role: 'user', content: input.content })
-  await db.message.create({
-    data: {
-      id: crypto.randomUUID(),
-      conversationId: input.conversationId,
-      userId: user.id,
-      role: 'user',
-      content: input.content,
-      sources: '[]',
-      createdAt: new Date().toISOString(),
-    },
-  })
+  const inserted = await conversationMessage(env.DB, {
+    conversationId: input.conversationId,
+    userId: user.id,
+    role: 'user',
+    content: input.content,
+    createdAt: new Date().toISOString(),
+  }).run()
+  if (!inserted.meta.changes)
+    throw new HttpError(404, 'CONVERSATION_NOT_FOUND', '这段会话已删除')
   const tools = {
     loadSkill: tool({
       description: '每轮先加载公考检索 Skill；返回方法与知识库路由。',
@@ -240,6 +239,17 @@ export async function chat(
       maxRetries: 0,
       abortSignal: request.signal,
       prepareStep: async ({ messages: stepMessages, stepNumber }) => {
+        const exists = await env.DB.prepare(
+          'SELECT id FROM Conversation WHERE id=? AND userId=?',
+        )
+          .bind(input.conversationId, user.id)
+          .first()
+        if (!exists)
+          throw new HttpError(
+            404,
+            'CONVERSATION_NOT_FOUND',
+            '这段会话已删除，已停止继续生成',
+          )
         const inputUpperBound =
           new TextEncoder().encode(JSON.stringify(stepMessages) + instructions)
             .byteLength + 32_768

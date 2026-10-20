@@ -10,6 +10,7 @@ import {
 } from 'node:fs'
 import { dirname, extname, join, relative, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
+import { excludedKnowledgePaths } from '../src/lib/knowledge-scope'
 
 const source = resolve(
   process.env.KNOWLEDGE_SOURCE ?? 'src-all-base-knownleage',
@@ -73,7 +74,7 @@ const documents = [
     path: `skill/${relative(skill, file)}`,
     kind: 'skill',
   })),
-]
+].filter((item) => !excludedKnowledgePaths.has(item.path))
 const pathIds = new Map(documents.map((item) => [item.path, hash(item.path)]))
 const sql = openSync(join(out, 'knowledge.sql'), 'w')
 const pack = openSync(join(out, 'content.pack'), 'w')
