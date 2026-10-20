@@ -10,6 +10,19 @@ const fragments = (parts: string[]) =>
     },
   })
 
+it('读取连接断开时返回可识别的上游错误并释放连接', async () => {
+  const close = vi.fn()
+  const broken = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.error(new Error('Network connection lost.'))
+    },
+  })
+  await expect(
+    socketResponse(broken, close, new AbortController().signal),
+  ).rejects.toMatchObject({ code: 'PROVIDER_CONNECTION_LOST' })
+  expect(close).toHaveBeenCalledOnce()
+})
+
 it('将分包 HTTP 响应的 chunked SSE 还原为可流式读取的响应，并及时关闭连接', async () => {
   const close = vi.fn()
   const response = await socketResponse(

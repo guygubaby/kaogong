@@ -63,7 +63,16 @@ export function socketResponse(
             if (error instanceof Error) throw protocolError()
           }
         } catch (error) {
-          fail(error)
+          fail(
+            error instanceof HttpError
+              ? error
+              : new HttpError(
+                  502,
+                  'PROVIDER_CONNECTION_LOST',
+                  '读取上游模型响应时连接中断，请稍后重试',
+                  { receivedBytes: size },
+                ),
+          )
         }
       },
       cancel() {
@@ -142,6 +151,7 @@ export async function httpSocketFetch(
   const close = () => {
     void socket.close().catch(() => {})
   }
+  const writeAbort = new AbortController()
   void socket.closed.catch(() => {})
   const headers = new Headers(request.headers)
   headers.set('host', url.host)
@@ -156,7 +166,7 @@ export async function httpSocketFetch(
   const response = socketResponse(
     socket.readable,
     close,
-    request.signal,
+    AbortSignal.any([request.signal, writeAbort.signal]),
     request.method === 'HEAD',
   )
   const writer = socket.writable.getWriter()
@@ -170,7 +180,16 @@ export async function httpSocketFetch(
       await writer.write(bytes.subarray(offset, offset + 16_384))
     }
   })()
-    .catch(() => close())
+    .catch(() =>
+      writeAbort.abort(
+        new HttpError(
+          502,
+          'PROVIDER_CONNECTION_LOST',
+          '写入上游模型请求时连接中断，请稍后重试',
+          { requestBytes: bytes.length },
+        ),
+      ),
+    )
     .finally(() => writer.releaseLock())
   return response
 }
