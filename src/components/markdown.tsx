@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
+import { learningContent } from '@/lib/learning-content'
 
 export function Markdown({ children }: { children: string }) {
   return (
@@ -32,7 +33,7 @@ export function Markdown({ children }: { children: string }) {
             ),
         }}
       >
-        {children}
+        {learningContent(children)}
       </ReactMarkdown>
     </div>
   )

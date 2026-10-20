@@ -5,6 +5,14 @@ import { z } from 'zod'
 import { joinURL } from 'ufo'
 import type { ProviderInput } from '../shared'
 import { HttpError } from './http'
+import { httpSocketFetch } from './http-socket'
+
+const transportFetch: typeof fetch = (input, init) => {
+  const url = new URL(input instanceof Request ? input.url : String(input))
+  return url.protocol === 'http:' && /^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)
+    ? httpSocketFetch(input, init)
+    : fetch(input, init)
+}
 
 export function normalizeBaseUrl(value: string) {
   const url = new URL(value)
@@ -53,9 +61,9 @@ export function normalizeBaseUrl(value: string) {
 export function providerFetch(
   baseUrl: string,
   sessionId: string,
-  upstream: typeof fetch = fetch,
+  upstream: typeof fetch = transportFetch,
 ): typeof fetch {
-  const origin = new URL(baseUrl).origin
+  const origin = new URL(normalizeBaseUrl(baseUrl)).origin
   return async (input, init) => {
     const target = new URL(input instanceof Request ? input.url : String(input))
     if (target.origin !== origin)
@@ -145,7 +153,10 @@ export async function discoverModels(
       : { Authorization: `Bearer ${apiKey}` }
   const response = await providerFetch(baseUrl, sessionId)(
     joinURL(baseUrl, 'models'),
-    { headers, signal: AbortSignal.timeout(20_000) },
+    {
+      headers,
+      signal: AbortSignal.timeout(20_000),
+    },
   )
   if (!response.ok) {
     const reader = response.body?.getReader()

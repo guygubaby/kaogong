@@ -19,20 +19,17 @@ export type PublicProvider = Omit<ProviderInput, 'apiKey' | 'id'> & {
   id: string
   keyPreview: string
 }
-export type Source = {
+export type KnowledgeItem = {
   id: string
   title: string
   module: string
   kind: string
-  path: string
-  url: string
   issue: boolean
 }
 export type ChatMessage = {
   id: string
   role: 'user' | 'assistant'
   content: string
-  sources: Source[]
 }
 export type Conversation = {
   id: string

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { z } from 'zod'
 import { errorText, http } from '@/lib/client'
-import type { ChatMessage, Conversation, Source } from '@/lib/shared'
+import type { ChatMessage, Conversation } from '@/lib/shared'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/input'
 import { Markdown } from '@/components/markdown'
@@ -29,7 +29,7 @@ type Models = {
   defaultProviderId?: string
   defaultModelId?: string
 }
-type StudyMessage = UIMessage<{ sources?: Source[]; totalTokens?: number }>
+type StudyMessage = UIMessage<{ totalTokens?: number }>
 const transport = new DefaultChatTransport<StudyMessage>({
   api: '/api/chat',
   prepareSendMessagesRequest: ({ messages, body }) => ({
@@ -263,7 +263,6 @@ function ChatPane({
       id: message.id,
       role: message.role,
       parts: [{ type: 'text', text: message.content }],
-      metadata: { sources: message.sources },
     })),
     onFinish: () => {
       void client.invalidateQueries({ queryKey: ['me'] })
@@ -337,25 +336,6 @@ function ChatPane({
                   </div>
                 ) : null,
               )}
-              {Boolean(message.metadata?.sources?.length) && (
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {message.metadata?.sources?.map((source) => (
-                    <a
-                      key={source.id}
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex max-w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-[11px] text-muted-foreground hover:border-primary hover:text-primary"
-                    >
-                      <BookOpen size={12} />
-                      <span className="truncate">{source.title}</span>
-                      {source.issue && (
-                        <span className="text-destructive">有疑点</span>
-                      )}
-                    </a>
-                  ))}
-                </div>
-              )}
             </article>
           ))}
           {busy && (
@@ -413,25 +393,21 @@ function ChatPane({
               className="max-h-40 min-h-18 w-full resize-y border-0 bg-transparent px-2 py-2 text-sm leading-7 outline-none"
             />
             <div className="flex items-center justify-between gap-3">
-              <label className="max-w-4/5 min-w-0">
-                <span className="sr-only">选择学习模型</span>
+              <div className="max-w-4/5 min-w-0">
                 <Select
+                  aria-label="选择学习模型"
                   value={selected}
-                  onChange={(event) => setSelection(event.target.value)}
-                  disabled={busy}
-                  className="h-8 max-w-96 border-0 bg-secondary text-[11px]"
-                >
-                  {choices.length ? (
-                    choices.map((choice) => (
-                      <option key={choice.key} value={choice.key}>
-                        {choice.label}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">管理员尚未配置模型</option>
-                  )}
-                </Select>
-              </label>
+                  onValueChange={setSelection}
+                  disabled={busy || !choices.length}
+                  placeholder="管理员尚未配置模型"
+                  size="compact"
+                  className="max-w-96"
+                  options={choices.map((choice) => ({
+                    value: choice.key,
+                    label: choice.label,
+                  }))}
+                />
+              </div>
               {busy ? (
                 <Button
                   type="button"

@@ -1,19 +1,23 @@
 import { createHash } from 'node:crypto'
-import type { Source } from '../shared'
+import type { KnowledgeItem } from '../shared'
+import { learningContent } from '../learning-content'
 import { runtime } from './runtime'
 import { HttpError } from './http'
 
 export const contentId = (path: string) =>
   createHash('sha256').update(path).digest('hex').slice(0, 24)
-type DocumentRow = Omit<Source, 'url' | 'issue'> & {
+type DocumentRow = Omit<KnowledgeItem, 'issue'> & {
   body: string
+  path: string
   issue: number
 }
-export function sourceOf(row: Omit<DocumentRow, 'body'>): Source {
+function summaryOf(row: Omit<DocumentRow, 'body'>): KnowledgeItem {
   return {
-    ...row,
+    id: row.id,
+    title: learningContent(row.title),
+    module: row.module,
+    kind: row.kind,
     issue: Boolean(row.issue),
-    url: `/learn/library?doc=${row.id}`,
   }
 }
 export async function searchKnowledge(
@@ -47,7 +51,10 @@ export async function searchKnowledge(
       .all<DocumentRow>()
     rows = result.results
   }
-  return rows.map((row) => ({ ...sourceOf(row), excerpt: row.body }))
+  return rows.map((row) => ({
+    ...summaryOf(row),
+    excerpt: learningContent(row.body),
+  }))
 }
 export async function readDocument(id: string, offset = 0, length = 12_000) {
   const row = await runtime()
@@ -55,11 +62,12 @@ export async function readDocument(id: string, offset = 0, length = 12_000) {
     .bind(id)
     .first<DocumentRow>()
   if (!row) throw new HttpError(404, 'DOCUMENT_NOT_FOUND', '这份资料尚未收录')
+  const body = learningContent(row.body)
   return {
-    ...sourceOf(row),
-    body: row.body.slice(offset, offset + length),
+    ...summaryOf(row),
+    body: body.slice(offset, offset + length),
     offset,
-    totalLength: row.body.length,
+    totalLength: body.length,
   }
 }
 export async function knownIssues(qid: string) {
@@ -79,7 +87,7 @@ export async function knownIssues(qid: string) {
     row.body
       .split('\n')
       .filter((line) => new RegExp(`\\b${qid}\\b`).test(line))
-      .map((text) => ({ path: row.path, text })),
+      .map((text) => ({ text: learningContent(text) })),
   )
 }
 export async function originalArtifact(
@@ -87,8 +95,11 @@ export async function originalArtifact(
   format: 'md' | 'js' | 'html',
   keyword: string,
 ) {
-  const document = await readDocument(documentId, 0, 1)
-  if (!document.path.startsWith('lectures/'))
+  const document = await runtime()
+    .env.DB.prepare('SELECT path FROM KnowledgeDocument WHERE id = ?')
+    .bind(documentId)
+    .first<{ path: string }>()
+  if (!document?.path.startsWith('lectures/'))
     throw new HttpError(400, 'NOT_LECTURE', '备用源码仅适用于讲义')
   const slug = document.path.slice('lectures/'.length, -3)
   const folder = format === 'js' ? 'chunks' : format === 'html' ? 'raw' : 'md'
@@ -108,9 +119,8 @@ export async function originalArtifact(
   return {
     found: index >= 0,
     format,
-    excerpt: body.slice(
-      Math.max(0, index - 1200),
-      Math.max(0, index - 1200) + 12_000,
+    excerpt: learningContent(
+      body.slice(Math.max(0, index - 1200), Math.max(0, index - 1200) + 12_000),
     ),
   }
 }

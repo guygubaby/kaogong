@@ -14,6 +14,7 @@ import { discoverModels, normalizeBaseUrl, testProvider } from './provider'
 import { chat } from './chat'
 import { readDocument, searchKnowledge } from './knowledge'
 import { providerInput } from '../shared'
+import { learningContent } from '../learning-content'
 
 const uuid = z.string().uuid()
 const providerProbe = providerInput.extend({
@@ -223,8 +224,9 @@ async function route(request: Request): Promise<Response> {
     return Response.json({
       ...conversation,
       messages: messages.map((message) => ({
-        ...message,
-        sources: JSON.parse(message.sources),
+        id: message.id,
+        role: message.role,
+        content: learningContent(message.content),
       })),
     })
   }
@@ -264,11 +266,17 @@ async function route(request: Request): Promise<Response> {
       })
     const where = params.module ? ' AND module = ?' : ''
     const results = await env.DB.prepare(
-      `SELECT id, title, module, kind, path, issue FROM KnowledgeDocument WHERE kind IN ('lecture','topic','question','material')${where} ORDER BY CASE WHEN kind='lecture' THEN 0 WHEN kind='topic' THEN 1 ELSE 2 END, title LIMIT 30 OFFSET ?`,
+      `SELECT id, title, module, kind, issue FROM KnowledgeDocument WHERE kind IN ('lecture','topic','question','material')${where} ORDER BY CASE WHEN kind='lecture' THEN 0 WHEN kind='topic' THEN 1 ELSE 2 END, title LIMIT 30 OFFSET ?`,
     )
       .bind(...(params.module ? [params.module] : []), (params.page - 1) * 30)
       .all()
-    return Response.json({ items: results.results, page: params.page })
+    return Response.json({
+      items: results.results.map((item) => ({
+        ...item,
+        title: learningContent(String(item.title)),
+      })),
+      page: params.page,
+    })
   }
   const documentMatch = path.match(/^\/knowledge\/documents\/([a-f0-9]{24})$/)
   if (documentMatch)

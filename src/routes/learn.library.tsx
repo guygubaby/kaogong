@@ -4,7 +4,7 @@ import { BookOpen, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import { http } from '@/lib/client'
-import type { Source } from '@/lib/shared'
+import type { KnowledgeItem } from '@/lib/shared'
 import { PageHeading } from '@/components/app/shell'
 import { Button } from '@/components/ui/button'
 import { Markdown } from '@/components/markdown'
@@ -38,7 +38,7 @@ function Library() {
             page: params.page,
           },
         })
-        .json<{ items: Source[]; page: number }>(),
+        .json<{ items: KnowledgeItem[]; page: number }>(),
     enabled: !params.doc,
   })
   const document = useQuery({
@@ -46,7 +46,7 @@ function Library() {
     queryFn: () =>
       http
         .get(`knowledge/documents/${params.doc}`)
-        .json<Source & { body: string }>(),
+        .json<KnowledgeItem & { body: string }>(),
     enabled: Boolean(params.doc),
   })
   const update = (next: Partial<typeof params>) =>
@@ -71,7 +71,7 @@ function Library() {
         ) : document.data ? (
           <>
             <p className="mt-9 mb-6 text-xs text-muted-foreground">
-              {document.data.module} / 本地原文
+              {document.data.module} / 学习资料
             </p>
             {document.data.issue && (
               <div className="mb-8 rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-800">
@@ -79,9 +79,6 @@ function Library() {
               </div>
             )}
             <Markdown>{document.data.body}</Markdown>
-            <div className="mt-14 border-t border-border pt-5 text-xs text-muted-foreground">
-              来源：{document.data.path}
-            </div>
           </>
         ) : (
           <p className="mt-12 text-sm text-muted-foreground">正在读取资料…</p>

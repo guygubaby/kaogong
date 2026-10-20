@@ -1,6 +1,6 @@
 # 考公
 
-中文公考学习平台：系统知识库、带出处的 AI 学习导师、用户额度与管理员工作台。
+中文公考学习平台：系统知识库、AI 学习导师、用户额度与管理员工作台。
 
 线上地址：[kaogong.guygubaby.top](https://kaogong.guygubaby.top)
 
@@ -72,6 +72,7 @@ pnpm knowledge:sync
 参考 [Open WebUI 的连接管理](https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/starting-with-openai-compatible/)与 [LibreChat 自定义端点](https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/custom_endpoint)的管理流程，采用 AI SDK 的官方 Provider 实现。
 
 - 支持公开 HTTP / HTTPS 网关及公网 IPv4 地址；拒绝本机、内网、链路本地和不受支持的协议。HTTP 链路上的密钥与问题内容未加密。
+- 公网 IPv4 的 HTTP 网关通过 Workers TCP Socket 接入，保留原始 Host；HTTP 分包和 SSE 由独立协议解析器处理，并限制响应大小、超时和取消。普通域名仍使用 Workers fetch。
 - 基础地址应包含所需网关前缀，例如 `https://api.example.com/v1`。填写域名根路径时会补 `/v1`。
 - Workers 不支持 `redirect: "error"`，请求统一使用 `manual`，只跟随同源且保留方法的 307/308（GET 可跟随同源跳转）；密钥不会跟随重定向到其他源。
 - 默认最大输出 128,000 tokens。实际可用上限取决于所选模型；不支持时请在管理员配置中降低。

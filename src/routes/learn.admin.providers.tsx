@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import {
@@ -179,11 +179,31 @@ function Providers() {
               />
             </Field>
             <Field label="API 协议" id="provider-protocol">
-              <Select id="provider-protocol" {...form.register('protocol')}>
-                <option value="openai">OpenAI 兼容 · Chat Completions</option>
-                <option value="responses">OpenAI · Responses</option>
-                <option value="anthropic">Anthropic 兼容 · Messages</option>
-              </Select>
+              <Controller
+                control={form.control}
+                name="protocol"
+                render={({ field }) => (
+                  <Select
+                    id="provider-protocol"
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={[
+                      {
+                        value: 'openai',
+                        label: 'OpenAI 兼容 · Chat Completions',
+                      },
+                      { value: 'responses', label: 'OpenAI · Responses' },
+                      {
+                        value: 'anthropic',
+                        label: 'Anthropic 兼容 · Messages',
+                      },
+                    ]}
+                  />
+                )}
+              />
             </Field>
           </div>
           <Field label="API 基础地址" id="provider-url">
@@ -330,16 +350,14 @@ function Providers() {
               <Select
                 id="test-model"
                 value={testingModel}
-                onChange={(event) => setTestingModel(event.target.value)}
+                onValueChange={setTestingModel}
                 className="max-w-80"
-              >
-                <option value="">请选择模型</option>
-                {available.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </Select>
+                placeholder="请选择模型"
+                options={available.map((model) => ({
+                  value: model,
+                  label: model,
+                }))}
+              />
             </Field>
             <Button
               type="button"
@@ -372,7 +390,7 @@ function Providers() {
           )}
           {Object.keys(form.formState.errors).length > 0 && (
             <p role="alert" className="text-xs text-destructive">
-              请检查连接名称、HTTPS 地址和输出上限是否填写正确。
+              请检查连接名称、API 地址和输出上限是否填写正确。
             </p>
           )}
         </form>
@@ -389,9 +407,9 @@ function Providers() {
                   settings.data.defaultProviderId,
                   settings.data.defaultModelId,
                 ])}
-                onChange={(event) => {
+                onValueChange={(value) => {
                   const [defaultProviderId, defaultModelId] = JSON.parse(
-                    event.target.value,
+                    value,
                   ) as [string, string]
                   updateSettings.mutate({
                     ...settings.data!,
@@ -399,21 +417,18 @@ function Providers() {
                     defaultModelId,
                   })
                 }}
-              >
-                <option value="[null,null]">尚未选择默认模型</option>
-                {providers.data
-                  ?.filter((provider) => provider.enabled)
-                  .flatMap((provider) =>
-                    provider.models.map((model) => (
-                      <option
-                        key={`${provider.id}:${model}`}
-                        value={JSON.stringify([provider.id, model])}
-                      >
-                        {provider.name} / {model}
-                      </option>
-                    )),
-                  )}
-              </Select>
+                options={[
+                  { value: '[null,null]', label: '尚未选择默认模型' },
+                  ...(providers.data
+                    ?.filter((provider) => provider.enabled)
+                    .flatMap((provider) =>
+                      provider.models.map((model) => ({
+                        value: JSON.stringify([provider.id, model]),
+                        label: `${provider.name} / ${model}`,
+                      })),
+                    ) ?? []),
+                ]}
+              />
             </Field>
             <label className="flex h-11 items-center gap-2 text-sm">
               <input

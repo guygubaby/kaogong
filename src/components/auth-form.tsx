@@ -67,7 +67,7 @@ export function AuthForm({ register: registering }: { register: boolean }) {
           <p className="mt-5 max-w-sm text-sm leading-8 text-slate-600">
             系统讲义、真题解析、AI 追问。
             <br />
-            让每一次理解，都能回到资料出处。
+            每天学一点，让进步看得见。
           </p>
           <div className="mt-10 space-y-3">
             <div className="mr-8 flex items-center gap-4 rounded-2xl border border-white bg-white/85 p-5 shadow-sm">
@@ -245,7 +245,7 @@ export function AuthForm({ register: registering }: { register: boolean }) {
             </Link>
           </p>
           <p className="mt-12 text-center text-xs leading-6 text-muted-foreground">
-            仅供学习交流 · 资料有出处，结论需核对
+            专注当下，认真积累每一点进步
             <br />
             每日额度按中国标准时间重置
           </p>
