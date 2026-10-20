@@ -70,19 +70,50 @@ export function providerFetch(
     new Headers(init?.headers).forEach((value, key) => headers.set(key, value))
     headers.set('user-agent', 'kaogong-learning-agent/1.0')
     headers.set('x-opencode-session', sessionId)
-    // Workers 不支持 redirect:error；手动拒绝跳转，避免携带密钥跨站跟随。
-    const response = await upstream(input, {
-      ...init,
-      headers,
-      redirect: 'manual',
-    })
-    if (response.status >= 300 && response.status < 400)
-      throw new HttpError(
-        502,
-        'PROVIDER_REDIRECT',
-        '上游发生重定向，请填写最终 API 地址',
-      )
-    return response
+    const method =
+      init?.method ?? (input instanceof Request ? input.method : 'GET')
+    let current: RequestInfo | URL = input
+    // Workers 不支持 redirect:error；只跟随同源、保留方法的跳转，不跨源携带密钥。
+    for (let redirects = 0; redirects < 4; redirects++) {
+      const response = await upstream(current, {
+        ...init,
+        headers,
+        redirect: 'manual',
+      })
+      if (response.status < 300 || response.status >= 400) return response
+      const location = response.headers.get('location')
+      const next = location
+        ? new URL(
+            location,
+            current instanceof Request ? current.url : String(current),
+          )
+        : null
+      const safeReplay =
+        method === 'GET' ||
+        method === 'HEAD' ||
+        response.status === 307 ||
+        response.status === 308
+      if (
+        !next ||
+        next.origin !== origin ||
+        !safeReplay ||
+        input instanceof Request ||
+        init?.body instanceof ReadableStream
+      ) {
+        throw new HttpError(
+          502,
+          'PROVIDER_REDIRECT',
+          '上游发生不安全的重定向，请检查最终 API 地址',
+          {
+            status: response.status,
+            destination: next ? next.origin + next.pathname : null,
+          },
+        )
+      }
+      await response.body?.cancel()
+      current = next
+    }
+    throw new HttpError(502, 'PROVIDER_REDIRECT', '上游重定向次数过多')
   }
 }
 

@@ -309,7 +309,7 @@ export async function chat(
           'failed',
           partialText,
           error instanceof HttpError ? error.code : 'PROVIDER_ERROR',
-          !APICallError.isInstance(error),
+          !APICallError.isInstance(error) && !(error instanceof HttpError),
         )
       },
     })
@@ -317,7 +317,10 @@ export async function chat(
     return result.toUIMessageStreamResponse({
       onError: (error) =>
         error instanceof HttpError
-          ? error.message
+          ? error.message +
+            (user.role === 'admin' && error.details
+              ? ' ' + JSON.stringify(error.details)
+              : '')
           : '模型调用失败，请稍后重试；若持续失败，请联系管理员检查 Provider。',
       messageMetadata: ({ part }) =>
         part.type === 'finish'

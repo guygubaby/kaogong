@@ -61,3 +61,27 @@ describe('自定义 Provider 请求', () => {
     expect(upstream).toHaveBeenCalledTimes(1)
   })
 })
+
+it('同源 307 保留请求正文与稳定会话，且不会使用 redirect:error', async () => {
+  const upstream = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      new Response(null, {
+        status: 307,
+        headers: { location: '/v1/chat/completions/' },
+      }),
+    )
+    .mockResolvedValueOnce(new Response('{}'))
+  const fetcher = providerFetch('https://example.com/v1', 'stable', upstream)
+  await fetcher('https://example.com/v1/chat/completions', {
+    method: 'POST',
+    body: '{"model":"test"}',
+  })
+  expect(String(upstream.mock.calls[1][0])).toBe(
+    'https://example.com/v1/chat/completions/',
+  )
+  expect(upstream.mock.calls[1][1]?.body).toBe('{"model":"test"}')
+  expect(
+    new Headers(upstream.mock.calls[1][1]?.headers).get('x-opencode-session'),
+  ).toBe('stable')
+})

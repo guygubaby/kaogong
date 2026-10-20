@@ -45,7 +45,7 @@ const transport = new DefaultChatTransport<StudyMessage>({
   }),
 })
 const toolLabels: Record<string, string> = {
-  'tool-loadSkill': '已加载公考检索 Skill',
+  'tool-loadSkill': '已加载学习检索指南',
   'tool-searchKnowledge': '检索相关讲义与考点',
   'tool-readDocument': '读取知识库原文',
   'tool-knownIssues': '核对真题疑点',
@@ -136,7 +136,7 @@ function Learning() {
           <div>
             <h1 className="text-sm font-medium">学习对话</h1>
             <p className="mt-1 text-[10px] text-muted-foreground">
-              bryce-kaogong-doc 知识库已接入
+              公考知识库已接入
             </p>
           </div>
           <Button

@@ -73,7 +73,7 @@ pnpm knowledge:sync
 
 - 支持公开 HTTP / HTTPS 网关及公网 IPv4 地址；拒绝本机、内网、链路本地和不受支持的协议。HTTP 链路上的密钥与问题内容未加密。
 - 基础地址应包含所需网关前缀，例如 `https://api.example.com/v1`。填写域名根路径时会补 `/v1`。
-- Workers 不支持 `redirect: "error"`，请求统一使用 `manual` 并拒绝 3xx；密钥不会跟随重定向到其他源。
+- Workers 不支持 `redirect: "error"`，请求统一使用 `manual`，只跟随同源且保留方法的 307/308（GET 可跟随同源跳转）；密钥不会跟随重定向到其他源。
 - 默认最大输出 128,000 tokens。实际可用上限取决于所选模型；不支持时请在管理员配置中降低。
 - 按 [OpenCode Go 文档](https://opencode.ai/v2/docs/console/go/#where-can-i-use-it)发送应用自身 User-Agent 和稳定会话头。其官方定位为编程 Agent 流量，教育聊天服务应使用允许此用途的 Provider；兼容请求头不能保证订阅适用或绕过服务限制。
 - 未配置 Provider 时，知识库仍可阅读，对话页会明确提示管理员配置，不返回伪造 AI 回答。
