@@ -18,8 +18,10 @@ const token: string =
 if (!token)
   throw new Error('请先运行 cf auth login，或设置 CLOUDFLARE_API_TOKEN')
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/d1/database/${database}/import`
-// shortcut: 资源包整体覆盖，更新知识库需维护窗口；多版本并行时改为版本化包键。
-const sql = readFileSync('.data/knowledge.sql')
+// shortcut: 全量资源包仍整体覆盖，需无中断更新图片时改为版本化包键。
+const sql = readFileSync(
+  process.env.KNOWLEDGE_SQL_FILE ?? '.data/knowledge.sql',
+)
 const etag = createHash('md5').update(sql).digest('hex')
 type ImportResult = {
   upload_url?: string

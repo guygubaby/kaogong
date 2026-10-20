@@ -11,6 +11,7 @@ import {
 import { dirname, extname, join, relative, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 import { excludedKnowledgePaths } from '../src/lib/knowledge-scope'
+import { rewriteKnowledgeLinks } from './knowledge-links'
 
 const source = resolve(
   process.env.KNOWLEDGE_SOURCE ?? 'src-all-base-knownleage',
@@ -72,7 +73,10 @@ const documents = [
   ].map((file) => ({
     file,
     path: `skill/${relative(skill, file)}`,
-    kind: 'skill',
+    kind:
+      file.includes('/references/linxuan/') && !file.endsWith('/INDEX.md')
+        ? 'topic'
+        : 'skill',
   })),
 ].filter((item) => !excludedKnowledgePaths.has(item.path))
 const pathIds = new Map(documents.map((item) => [item.path, hash(item.path)]))
@@ -133,17 +137,20 @@ for (const item of documents) {
   const title =
     body.match(/^# (.+)$/m)?.[1].trim() ??
     item.path.split('/').at(-1)!.replace(/\.md$/, '')
-  const module = lecture
-    ? ((
-        {
-          'monthly-affairs': '每月时政',
-          share: '国情省情',
-          综应: '综合应用能力',
-          专业: '公安专业',
-          言语理解: '言语理解与表达',
-        } as Record<string, string>
-      )[item.path.slice(9).split('__')[0]] ?? item.path.slice(9).split('__')[0])
-    : (item.path.split('/')[2] ?? '知识库索引')
+  const module = item.path.startsWith('skill/references/linxuan/')
+    ? '遴选'
+    : lecture
+      ? ((
+          {
+            'monthly-affairs': '每月时政',
+            share: '国情省情',
+            综应: '综合应用能力',
+            专业: '公安专业',
+            言语理解: '言语理解与表达',
+          } as Record<string, string>
+        )[item.path.slice(9).split('__')[0]] ??
+        item.path.slice(9).split('__')[0])
+      : (item.path.split('/')[2] ?? '知识库索引')
   body = body
     .replace(
       /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi,
@@ -175,6 +182,7 @@ for (const item of documents) {
     .replace(/<\/?p[^>]*>/g, '\n\n')
     .replace(/<br\s*\/?\s*>/g, '\n')
     .replace(/<\/?u>/g, '')
+  body = rewriteKnowledgeLinks(body, item.path, pathIds)
   const qid = item.path.match(/\/(\d+) /)?.[1]
   const issue = Boolean(
     qid &&
