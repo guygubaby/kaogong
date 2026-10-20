@@ -54,7 +54,7 @@ export function AuthForm({ register: registering }: { register: boolean }) {
         </span>
       </header>
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-12 md:min-h-[calc(100svh-7rem)] md:grid-cols-2 md:gap-20 md:px-10">
-        <aside className="relative hidden overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-100 via-sky-50 to-emerald-50 p-9 md:block">
+        <aside className="relative hidden overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-50 via-lime-50 to-amber-50 p-9 md:block">
           <span className="mb-7 inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs text-primary">
             <Sparkles size={14} />
             知识库 × AI 学习导师
@@ -71,7 +71,7 @@ export function AuthForm({ register: registering }: { register: boolean }) {
           </p>
           <div className="mt-10 space-y-3">
             <div className="mr-8 flex items-center gap-4 rounded-2xl border border-white bg-white/85 p-5 shadow-sm">
-              <span className="grid size-11 place-items-center rounded-xl bg-violet-100 text-violet-600">
+              <span className="grid size-11 place-items-center rounded-xl bg-rose-100 text-rose-600">
                 <BookOpen size={23} />
               </span>
               <div>
@@ -80,10 +80,10 @@ export function AuthForm({ register: registering }: { register: boolean }) {
                   读懂材料，组织要点，写清观点。
                 </p>
               </div>
-              <Check className="ml-auto size-4 text-violet-500" />
+              <Check className="ml-auto size-4 text-rose-500" />
             </div>
             <div className="ml-8 flex items-center gap-4 rounded-2xl border border-white bg-white/85 p-5 shadow-sm">
-              <span className="grid size-11 place-items-center rounded-xl bg-sky-100 text-sky-600">
+              <span className="grid size-11 place-items-center rounded-xl bg-amber-100 text-amber-700">
                 <ChartNoAxesCombined size={23} />
               </span>
               <div>
@@ -92,7 +92,7 @@ export function AuthForm({ register: registering }: { register: boolean }) {
                   从数据关系，找到解题方法。
                 </p>
               </div>
-              <Check className="ml-auto size-4 text-sky-500" />
+              <Check className="ml-auto size-4 text-amber-600" />
             </div>
             <div className="mr-8 flex items-center gap-4 rounded-2xl border border-white bg-white/85 p-5 shadow-sm">
               <span className="grid size-11 place-items-center rounded-xl bg-emerald-100 text-emerald-600">

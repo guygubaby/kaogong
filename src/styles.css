@@ -1,14 +1,14 @@
 @import 'tailwindcss';
 @theme inline {
-  --color-background: #fbfcff;
-  --color-foreground: #24324b;
-  --color-primary: #455ce9;
-  --color-primary-dark: #334bd3;
-  --color-secondary: #f1f5ff;
-  --color-muted: #eaf0fb;
-  --color-muted-foreground: #70809b;
-  --color-border: #e2e8f5;
-  --color-input: #dbe4f3;
+  --color-background: #fbfdf9;
+  --color-foreground: #203a31;
+  --color-primary: #287d65;
+  --color-primary-dark: #1d624e;
+  --color-secondary: #eef6ef;
+  --color-muted: #e8f1e7;
+  --color-muted-foreground: #6b8074;
+  --color-border: #dfeade;
+  --color-input: #d7e5d9;
   --color-destructive: #c5373e;
   --color-success: #257752;
   --font-sans:
@@ -47,7 +47,7 @@
     cursor: not-allowed;
   }
   ::selection {
-    background: #455ce9;
+    background: #287d65;
     color: white;
   }
   :focus-visible {
@@ -117,13 +117,13 @@
 .markdown pre {
   overflow-x: auto;
   border-radius: 0.75rem;
-  background: #f2f3f4;
+  background: #f0f5ee;
   padding: 1rem;
   font-size: 0.85em;
 }
 .markdown :not(pre) > code {
   padding: 0.15em 0.3em;
-  background: #f2f3f4;
+  background: #f0f5ee;
   border-radius: 0.2em;
   font-size: 0.9em;
 }
@@ -142,7 +142,7 @@
   text-align: left;
 }
 .markdown th {
-  background: #f2f3f4;
+  background: #f0f5ee;
   font-weight: 500;
 }
 .markdown hr {

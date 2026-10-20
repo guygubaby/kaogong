@@ -20,7 +20,7 @@ React 19、TanStack Start / Router、Vite 8、TypeScript、Tailwind CSS v4、sha
 
 数据层使用 D1 + Durable Objects，按本项目确认的方案替代 PostgreSQL + Redis。使用 Cloudflare CLI `cf` 和 `cloudflare.config.ts`。
 
-界面采用明亮蓝白底色，并用紫、蓝、绿、黄区分学科入口。
+界面采用薄荷绿与暖白底色，并用浅绿、杏色、淡粉区分学科入口。
 
 ## 本地开发
 
@@ -80,6 +80,6 @@ pnpm knowledge:sync
 
 ## 发布
 
-`main` 是生产分支。Cloudflare Workers Builds 连接此仓库后自动构建并发布，运行时密钥和知识库存储独立于代码部署保留。
+`main` 是生产分支。Cloudflare Workers Builds 已连接此仓库的 `main` 分支，自动构建并发布，运行时密钥和知识库存储独立于代码部署保留。
 
 原资料的许可及出处以资料库原始说明为准。此仓库不重新授权第三方题干、解析和图片。
