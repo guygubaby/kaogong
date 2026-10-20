@@ -1,0 +1,165 @@
+@import 'tailwindcss';
+@theme inline {
+  --color-background: #fbfcff;
+  --color-foreground: #24324b;
+  --color-primary: #455ce9;
+  --color-primary-dark: #334bd3;
+  --color-secondary: #f1f5ff;
+  --color-muted: #eaf0fb;
+  --color-muted-foreground: #70809b;
+  --color-border: #e2e8f5;
+  --color-input: #dbe4f3;
+  --color-destructive: #c5373e;
+  --color-success: #257752;
+  --font-sans:
+    'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --container-site: 1440px;
+  --text-hero: clamp(5rem, 16.5vw, 22rem);
+  --text-display: clamp(3rem, 7.2vw, 8rem);
+  --text-nav: clamp(2.5rem, 5vw, 5rem);
+  --ease-site: cubic-bezier(0.7, 0, 0.3, 1);
+}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+  body {
+    margin: 0;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button,
+  [role='button'],
+  summary {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  ::selection {
+    background: #455ce9;
+    color: white;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 5px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+.markdown {
+  font-size: 0.9375rem;
+  line-height: 1.95;
+  overflow-wrap: anywhere;
+}
+.markdown > :first-child {
+  margin-top: 0;
+}
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0.9em 0;
+}
+.markdown h1 {
+  font-size: 1.9em;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 1.6em 0 0.8em;
+}
+.markdown h2 {
+  font-size: 1.45em;
+  font-weight: 600;
+  margin: 1.6em 0 0.6em;
+}
+.markdown h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+  margin: 1.25em 0 0.5em;
+}
+.markdown li {
+  margin: 0.3em 0;
+}
+.markdown ul,
+.markdown ol {
+  padding-left: 1.4em;
+}
+.markdown ul {
+  list-style: disc;
+}
+.markdown ol {
+  list-style: decimal;
+}
+.markdown a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.markdown blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding: 0.4em 1em;
+  margin: 1em 0;
+  background: var(--color-secondary);
+  color: #52555b;
+}
+.markdown pre {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #f2f3f4;
+  padding: 1rem;
+  font-size: 0.85em;
+}
+.markdown :not(pre) > code {
+  padding: 0.15em 0.3em;
+  background: #f2f3f4;
+  border-radius: 0.2em;
+  font-size: 0.9em;
+}
+.markdown table {
+  display: block;
+  max-width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+.markdown th,
+.markdown td {
+  padding: 0.6em 0.9em;
+  border: 1px solid #dedfe2;
+  min-width: 5em;
+  text-align: left;
+}
+.markdown th {
+  background: #f2f3f4;
+  font-weight: 500;
+}
+.markdown hr {
+  border-color: var(--color-border);
+  margin: 2em 0;
+}
+.formula-image {
+  display: inline-block;
+  max-height: 4em;
+  width: auto;
+  max-width: 100%;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+.knowledge-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1em auto;
+}

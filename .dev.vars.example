@@ -1,0 +1,4 @@
+APP_URL=http://localhost:3007
+BETTER_AUTH_SECRET=generate-a-random-secret-at-least-32-characters-long
+ENCRYPTION_KEY=generate-a-base64-encoded-32-byte-key
+BOOTSTRAP_TOKEN=generate-a-random-secret-at-least-32-characters-long

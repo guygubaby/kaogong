@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  runtime = "workerd"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id String @id
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role String @default("user")
+  banned Boolean @default(false)
+  banReason String?
+  banExpires DateTime?
+  dailyTokenLimit Int @default(50000000)
+  requestsPerMinute Int @default(30)
+  sessions Session[]
+  accounts Account[]
+}
+
+model Session {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId String
+  impersonatedBy String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Account {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Verification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+}
+
+model Provider {
+  id String @id
+  name String
+  protocol String
+  baseUrl String
+  encryptedKey String
+  keyPreview String
+  models String @default("[]")
+  enabled Boolean @default(true)
+  maxOutputTokens Int @default(128000)
+  createdAt String
+  updatedAt String
+}
+
+model AppSettings {
+  id String @id @default("global")
+  defaultProviderId String?
+  defaultModelId String?
+  registrationEnabled Boolean @default(true)
+}
+
+model Conversation {
+  id String @id
+  userId String
+  title String
+  providerId String?
+  modelId String?
+  createdAt String
+  updatedAt String
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id String @id
+  conversationId String
+  userId String
+  role String
+  content String
+  sources String @default("[]")
+  createdAt String
+  @@index([conversationId, createdAt])
+}
+
+model UsageEvent {
+  id String @id
+  userId String
+  conversationId String?
+  providerId String?
+  modelId String?
+  day String
+  inputTokens Int @default(0)
+  outputTokens Int @default(0)
+  totalTokens Int @default(0)
+  status String
+  latencyMs Int @default(0)
+  errorCode String?
+  createdAt String
+  @@index([userId, day])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id String @id
+  actorId String
+  targetId String?
+  action String
+  details String
+  createdAt String
+  @@index([createdAt])
+}
+
+model KnowledgeDocument {
+  id String @id
+  kind String
+  module String
+  title String
+  path String @unique
+  body String
+  issue Boolean @default(false)
+  @@index([module, kind])
+}
+
+model KnowledgeAsset {
+  id String @id
+  offset Int
+  length Int
+  contentType String
+}
