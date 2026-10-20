@@ -160,8 +160,16 @@ export async function httpSocketFetch(
     request.method === 'HEAD',
   )
   const writer = socket.writable.getWriter()
-  void writer
-    .write(Buffer.concat([Buffer.from(header + '\r\n'), Buffer.from(payload)]))
+  const bytes = Buffer.concat([
+    Buffer.from(header + '\r\n'),
+    Buffer.from(payload),
+  ])
+  void (async () => {
+    for (let offset = 0; offset < bytes.length; offset += 16_384) {
+      request.signal.throwIfAborted()
+      await writer.write(bytes.subarray(offset, offset + 16_384))
+    }
+  })()
     .catch(() => close())
     .finally(() => writer.releaseLock())
   return response

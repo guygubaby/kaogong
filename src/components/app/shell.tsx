@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import * as Dialog from '@radix-ui/react-dialog'
 import { Link, Navigate, Outlet, useNavigate } from '@tanstack/react-router'
 import {
   BookOpen,
@@ -29,7 +30,8 @@ const adminNavigation = [
 export function AppShell() {
   const me = useQuery(meQuery),
     [open, setOpen] = useState(false),
-    navigate = useNavigate()
+    navigate = useNavigate(),
+    client = useQueryClient()
   if (me.isError) return <Navigate to="/login" />
   if (!me.data)
     return (
@@ -38,132 +40,142 @@ export function AppShell() {
       </main>
     )
   const { user, budget } = me.data
-  return (
-    <div className="flex min-h-svh bg-background">
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="打开侧边栏"
-        className="fixed top-4 left-4 z-30 grid size-10 place-items-center rounded-full border border-border bg-background lg:hidden"
-      >
-        <PanelLeft size={18} />
-      </button>
-      {open && (
+  const sidebar = (
+    <>
+      <div className="mb-12 flex items-center justify-between px-2">
+        <Link to="/" className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-foreground">
+            <BookOpen size={22} strokeWidth={1.6} />
+          </span>
+          <span className="text-lg tracking-widest">考公</span>
+        </Link>
         <button
-          aria-label="关闭侧边栏遮罩"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/35 lg:hidden"
-        />
-      )}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-secondary/50 px-5 py-7 backdrop-blur-xl transition-transform lg:z-20 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
-      >
-        <div className="mb-12 flex items-center justify-between px-2">
-          <Link to="/" className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-foreground">
-              <BookOpen size={22} strokeWidth={1.6} />
-            </span>
-            <span className="text-lg tracking-widest">考公</span>
-          </Link>
-          <button
-            onClick={() => setOpen(false)}
-            aria-label="收起侧边栏"
-            className="lg:hidden"
-          >
-            <ChevronsLeft size={19} />
-          </button>
-        </div>
-        <nav aria-label="学习空间导航" className="space-y-1">
-          {navigation.map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              activeOptions={{ exact: true }}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
-              activeProps={{
-                className: 'bg-background text-foreground shadow-xs',
-              }}
-            >
-              <Icon size={18} strokeWidth={1.6} />
-              {label}
-            </Link>
-          ))}
-          {user.role === 'admin' && (
-            <>
-              <p className="px-4 pt-9 pb-3 text-[11px] text-muted-foreground">
-                管理工作台
-              </p>
-              {adminNavigation.map(({ to, label, icon: Icon }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
-                  activeProps={{
-                    className: 'bg-background text-foreground shadow-xs',
-                  }}
-                >
-                  <Icon size={18} strokeWidth={1.6} />
-                  {label}
-                </Link>
-              ))}
-            </>
-          )}
-        </nav>
-        <div className="mt-auto pt-10">
-          <Link
-            to="/learn/usage"
-            className="block rounded-2xl border border-border bg-background p-4"
-          >
-            <div className="mb-3 flex justify-between text-xs">
-              <span className="text-muted-foreground">今日已用额度</span>
-              <span>
-                {budget.limit > 0
-                  ? Math.min(100, (budget.used / budget.limit) * 100).toFixed(1)
-                  : 100}
-                %
-              </span>
-            </div>
-            <div className="h-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary"
-                style={{
-                  width: `${budget.limit > 0 ? Math.min(100, (budget.used / budget.limit) * 100) : 100}%`,
-                }}
-              />
-            </div>
-            <p className="mt-3 text-[11px] text-muted-foreground">
-              {cnNumber(budget.used)} / {cnNumber(budget.limit)} tokens
-            </p>
-          </Link>
-          <div className="mt-5 flex items-center gap-3 px-2">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-xs text-white">
-              {user.name.slice(0, 1)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs">{user.name}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {user.role === 'admin' ? '管理员' : '学习者'}
-              </p>
-            </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label="退出登录"
-              onClick={async () => {
-                await authClient.signOut()
-                await navigate({ to: '/login' })
-              }}
-            >
-              <LogOut size={16} />
-            </Button>
-          </div>
-        </div>
-      </aside>
-      <div className="min-w-0 flex-1 lg:ml-64">
-        <Outlet />
+          aria-label="收起侧边栏"
+          className="lg:hidden"
+        >
+          <ChevronsLeft size={19} />
+        </button>
       </div>
-    </div>
+      <nav aria-label="学习空间导航" className="space-y-1">
+        {navigation.map(({ to, label, icon: Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            activeOptions={{ exact: true }}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
+            activeProps={{
+              className: 'bg-background text-foreground shadow-xs',
+            }}
+          >
+            <Icon size={18} strokeWidth={1.6} />
+            {label}
+          </Link>
+        ))}
+        {user.role === 'admin' && (
+          <>
+            <p className="px-4 pt-9 pb-3 text-[11px] text-muted-foreground">
+              管理工作台
+            </p>
+            {adminNavigation.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                activeProps={{
+                  className: 'bg-background text-foreground shadow-xs',
+                }}
+              >
+                <Icon size={18} strokeWidth={1.6} />
+                {label}
+              </Link>
+            ))}
+          </>
+        )}
+      </nav>
+      <div className="mt-auto pt-10">
+        <Link
+          to="/learn/usage"
+          className="block rounded-2xl border border-border bg-background p-4"
+        >
+          <div className="mb-3 flex justify-between text-xs">
+            <span className="text-muted-foreground">今日已用额度</span>
+            <span>
+              {budget.limit > 0
+                ? Math.min(100, (budget.used / budget.limit) * 100).toFixed(1)
+                : 100}
+              %
+            </span>
+          </div>
+          <div className="h-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary"
+              style={{
+                width: `${budget.limit > 0 ? Math.min(100, (budget.used / budget.limit) * 100) : 100}%`,
+              }}
+            />
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            {cnNumber(budget.used)} / {cnNumber(budget.limit)} tokens
+          </p>
+        </Link>
+        <div className="mt-5 flex items-center gap-3 px-2">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-xs text-white">
+            {user.name.slice(0, 1)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs">{user.name}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              {user.role === 'admin' ? '管理员' : '学习者'}
+            </p>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="退出登录"
+            onClick={async () => {
+              await authClient.signOut()
+              client.clear()
+              await navigate({ to: '/login' })
+            }}
+          >
+            <LogOut size={16} />
+          </Button>
+        </div>
+      </div>
+    </>
+  )
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <div className="flex min-h-svh bg-background">
+        <Dialog.Trigger asChild>
+          <button
+            aria-label="打开侧边栏"
+            className="fixed top-4 left-4 z-30 grid size-10 place-items-center rounded-full border border-border bg-background lg:hidden"
+          >
+            <PanelLeft size={18} />
+          </button>
+        </Dialog.Trigger>
+        <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col overflow-y-auto border-r border-border bg-secondary/50 px-5 py-7 lg:flex">
+          {sidebar}
+        </aside>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden" />
+          <Dialog.Content
+            aria-describedby={undefined}
+            className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto overscroll-contain border-r border-border bg-background px-5 py-7 shadow-xl outline-none lg:hidden"
+          >
+            <Dialog.Title className="sr-only">学习空间导航</Dialog.Title>
+            {sidebar}
+          </Dialog.Content>
+        </Dialog.Portal>
+        <div className="min-w-0 flex-1 lg:ml-64">
+          <Outlet />
+        </div>
+      </div>
+    </Dialog.Root>
   )
 }
 export function PageHeading({

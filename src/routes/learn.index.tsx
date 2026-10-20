@@ -149,6 +149,24 @@ function Learning() {
             新对话
           </Button>
         </header>
+        {Boolean(conversations.data?.length) && (
+          <div className="border-b border-border px-5 py-3 xl:hidden">
+            <Select
+              aria-label="历史学习对话"
+              value={chatId ?? ''}
+              placeholder="选择之前的学习对话"
+              size="compact"
+              options={(conversations.data ?? []).map((item) => ({
+                value: item.id,
+                label: item.title,
+              }))}
+              onValueChange={(id) => {
+                setFirstPrompt('')
+                void navigate({ to: '/learn', search: { chat: id } })
+              }}
+            />
+          </div>
+        )}
         {error && (
           <p role="alert" className="p-4 text-sm text-destructive">
             {error}

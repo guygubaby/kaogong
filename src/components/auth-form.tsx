@@ -12,6 +12,7 @@ import {
   Check,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { authClient } from '@/lib/client'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
@@ -26,7 +27,8 @@ const schema = z.object({
 })
 export function AuthForm({ register: registering }: { register: boolean }) {
   const navigate = useNavigate(),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    client = useQueryClient()
   const {
     register,
     handleSubmit,
@@ -155,6 +157,7 @@ export function AuthForm({ register: registering }: { register: boolean }) {
                   )
                   return
                 }
+                client.clear()
                 await navigate({ to: '/learn' })
               } catch {
                 setError('连接失败，请检查网络后重试')
