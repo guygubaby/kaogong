@@ -214,6 +214,7 @@ export async function chat(
       },
     }),
   }
+  const apiKey = await decrypt(provider.encryptedKey)
   try {
     const result = streamText({
       model: languageModel(
@@ -221,7 +222,7 @@ export async function chat(
           protocol: provider.protocol as 'openai' | 'responses' | 'anthropic',
           baseUrl: provider.baseUrl,
         },
-        await decrypt(provider.encryptedKey),
+        apiKey,
         modelId,
         input.conversationId,
       ),
@@ -306,13 +307,27 @@ export async function chat(
     })
     ctx.waitUntil(completion)
     return result.toUIMessageStreamResponse({
-      onError: (error) =>
-        error instanceof HttpError
-          ? error.message +
+      onError: (error) => {
+        if (error instanceof HttpError)
+          return (
+            error.message +
             (user.role === 'admin' && error.details
               ? ' ' + JSON.stringify(error.details)
               : '')
-          : '模型调用失败，请稍后重试；若持续失败，请联系管理员检查 Provider。',
+          )
+        if (user.role === 'admin' && error instanceof Error) {
+          const detail = APICallError.isInstance(error)
+            ? `${error.statusCode ?? ''} ${error.responseBody ?? error.message}`
+            : `${error.name}: ${error.message}`
+          return (
+            '模型调用失败：' +
+            learningContent(
+              detail.replaceAll(apiKey, '[已隐藏]').slice(0, 1200),
+            )
+          )
+        }
+        return '模型调用失败，请稍后重试；若持续失败，请联系管理员检查 Provider。'
+      },
       messageMetadata: ({ part }) =>
         part.type === 'finish' ? { totalTokens: chargedTokens } : undefined,
       headers: {
