@@ -194,7 +194,7 @@ function Learning() {
                     disabled={
                       create.isPending || !models.data?.providers.length
                     }
-                    className={`group flex items-center justify-between gap-4 rounded-2xl border p-5 text-left text-xs leading-6 transition-colors disabled:opacity-50 ${['border-emerald-100 bg-emerald-50 hover:bg-emerald-100', 'border-amber-100 bg-amber-50 hover:bg-amber-100', 'border-rose-100 bg-rose-50 hover:bg-rose-100', 'border-lime-100 bg-lime-50 hover:bg-lime-100'][index]}`}
+                    className={`group flex items-center justify-between gap-4 rounded-2xl border p-5 text-left text-xs leading-6 transition-colors disabled:opacity-50 ${['border-violet-100 bg-violet-50 hover:bg-violet-100', 'border-sky-100 bg-sky-50 hover:bg-sky-100', 'border-emerald-100 bg-emerald-50 hover:bg-emerald-100', 'border-amber-100 bg-amber-50 hover:bg-amber-100'][index]}`}
                   >
                     {question}
                     <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

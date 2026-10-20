@@ -23,7 +23,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           content:
             '公考知识库与 AI 学习导师。行测、申论、综应，读原文、懂考点、会方法。',
         },
-        { name: 'theme-color', content: '#fbfdf9' },
+        { name: 'theme-color', content: '#fbfcff' },
       ],
       links: [
         { rel: 'stylesheet', href: styles },

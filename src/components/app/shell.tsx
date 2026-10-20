@@ -59,7 +59,9 @@ export function AppShell() {
       >
         <div className="mb-12 flex items-center justify-between px-2">
           <Link to="/" className="flex items-center gap-3">
-            <BookOpen size={24} strokeWidth={1.6} />
+            <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-foreground">
+              <BookOpen size={22} strokeWidth={1.6} />
+            </span>
             <span className="text-lg tracking-widest">考公</span>
           </Link>
           <button
